@@ -14,16 +14,31 @@ tools = [
         "type": "function",
         "function": {
             "name": "read_file",
-            "description": "读取 notes 目录下的学习笔记",
+            "description": (
+                "按行读取 notes 目录中的 txt 笔记，返回带原始行号的内容。"
+                "检索片段不足时，根据检索结果的行号选择需要补充的范围。"
+                "起始行和结束行都包含，每次最多读取50行。"
+            ),
             "parameters": {
                 "type": "object",
                 "properties": {
                     "filename": {
                         "type": "string",
                         "description": "笔记文件名，如 kotlin.txt"
+                    },
+                    "start_line": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "description": "起始行号，从1开始"
+                    },
+                    "end_line": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "description": "结束行号，包含这一行"
                     }
                 },
-                "required": ["filename"]
+                "required": ["filename", "start_line", "end_line"],
+                "additionalProperties": False
             }
         }
     },
@@ -87,17 +102,25 @@ def execute_tool(name,arguments):
             return "错误，search_notes 只接受 keyword 参数"
         return search_notes(args["keyword"])
 
-    filename = args.get("filename")
 
-    if not isinstance(filename,str):
-        return "错误，文件名必须是字符串"
+    # 前面的分支已经处理了其他工具，走到这里的是read_file
+    expected_keys = {"filename", "start_line", "end_line"}
 
-    #第二阶段，执行工具
-    try :
-        return read_file(filename)
-    except OSError:  #这里引入的 OSError 是文件、目录等系统操作异常的一类父异常。
-        return "文件访问失败"
+    # 必须恰好提供这三个参数
+    if set(args) != expected_keys:
+        return "错误，read_file必须且只能提供filename，start_line,end_line"
 
+    # 字段齐全不代表值合法
+    # 显示检查None，避免两个null触发底层函数的全文读取模式
+    if args["start_line"] is None or args["end_line"] is None:
+        return "错误，起始行和结束行不能为null"
+
+    # 类型，范围，50行上限和路径限制由文件函数继续检查
+    return read_file(
+        filename = args["filename"],
+        start_line = args["start_line"],
+        end_line = args["end_line"]
+    )
 
 
 def run_agent(user_task,session_id):
@@ -192,6 +215,16 @@ def run_agent(user_task,session_id):
             print("模型请求失败，错误类型：", type(exc).__name__)
             break
 
+        # 空列表里没有第0项，必须先检查再取值
+        if not response.choices:
+            state["status"] = "failed"
+            save_session(USER_ID, SESSION_ID, state)
+            logger.warning(
+                "模型响应无候选结果 session=%r",
+                SESSION_ID
+            )
+            print("模型响应异常：没有返回候选结果")
+            break
         choice = response.choices[0]
         message = choice.message
         finish_reason = choice.finish_reason
@@ -222,6 +255,20 @@ def run_agent(user_task,session_id):
             save_session(USER_ID, SESSION_ID, state)
             print("模型响应异常：结束原因与工具调用不一致")
             break
+
+        if not tool_calls:
+            content = message.content
+
+            if not isinstance(content, str) or not content.strip():
+                state["status"] = "failed"
+                save_session(USER_ID, SESSION_ID, state)
+
+                logger.warning(
+                    "模型最终回答为空 session=%r",
+                    SESSION_ID
+                )
+                print("模型响应异常：最终回答为空")
+                break
 
         messages.append(message.model_dump(exclude_none=True))
 
