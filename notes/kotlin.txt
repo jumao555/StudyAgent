@@ -1,0 +1,4 @@
+Kotlin 学习笔记
+1. val 和 var 的区别
+2. 函数的定义
+3. List 和 MutableList

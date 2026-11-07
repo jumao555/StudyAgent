@@ -1,0 +1,85 @@
+Python 异常与数据处理学习资料
+资料性质：AI 编写的练习资料，供 StudyAgent 检索与引用测试使用。
+
+一、异常为什么会中断程序
+Python 执行一条语句时发生异常，会停止当前正常执行路径，并寻找能够处理该异常的 except 分支。
+如果当前函数没有捕获异常，异常会沿函数调用关系向调用方传播。
+异常没有被处理时，程序通常会输出 Traceback，指出异常类型和相关调用位置。
+发生异常后，同一个 try 中尚未执行的普通语句会被跳过。
+
+二、区分参数错误和执行错误
+参数错误表示输入不符合函数约定，例如要求字符串，却收到整数或 None。
+执行错误表示操作过程中出现问题，例如文件不存在、权限不足或读取时编码不匹配。
+TypeError 常用于表达类型不合适，ValueError 常用于表达类型可接受但值不合适。
+参数解析和实际操作适合分别处理异常，以便向调用方提供准确的失败原因。
+不要把所有异常都当作同一种输入错误，否则会掩盖真实的程序缺陷。
+
+三、文件读取与异常处理
+Path.read_text(encoding="utf-8") 可以将整个文本文件读取为字符串。
+FileNotFoundError 表示目标路径不存在；如果路径中的父目录不存在，也可能出现此异常。
+PermissionError 表示操作被权限限制拒绝。
+UnicodeDecodeError 表示文件字节无法按指定编码解码，它不意味着文件不存在。
+FileNotFoundError 和 PermissionError 都属于 OSError 的子类。
+UnicodeDecodeError 不属于 OSError，因此仅捕获 OSError 不能处理所有文本读取失败。
+
+示例代码
+from pathlib import Path
+
+def read_note(path):
+    try:
+        return Path(path).read_text(encoding="utf-8")
+    except FileNotFoundError:
+        return "错误：文件不存在"
+    except PermissionError:
+        return "错误：没有读取权限"
+    except UnicodeDecodeError:
+        return "错误：文件不是有效的 UTF-8 文本"
+    except OSError:
+        return "错误：文件读取失败"
+
+四、return、break 和 finally
+return 结束当前函数，并将指定结果交给调用方。
+break 退出最内层的循环，循环后面的代码仍可能继续执行。
+for 循环正常耗尽时会执行其 else 分支；通过 break 退出时不会执行该分支。
+finally 通常在退出 try 语句时执行，适合安排资源清理或恢复临时配置。
+在 try 或 except 中执行 return、break 时，相关 finally 仍会先执行。
+强制终止进程或断电时，不能保证 finally 得到执行。
+
+五、JSON 和 Python 对象
+json.dumps() 将受支持的 Python 数据转换成 JSON 字符串。
+json.loads() 将 JSON 字符串解析成对应的 Python 对象。
+JSON 最外层可以是对象、数组、字符串、数字、布尔值或 null。
+因此 json.loads() 成功，不代表结果一定是 dict，还需要根据函数约定检查类型。
+解析 {} 得到字典，解析 [] 得到列表，解析 null 得到 None。
+格式不合法的 JSON 会引发 json.JSONDecodeError。
+ensure_ascii=False 允许序列化结果直接保留中文字符，但文件写入编码仍需单独指定。
+
+示例代码
+import json
+
+args = json.loads('{"filename": "python.txt"}')
+if isinstance(args, dict):
+    filename = args.get("filename")
+
+六、列表引用与独立快照
+执行 messages = state["messages"] 时，两个访问路径引用同一个列表。
+通过 messages.append() 追加消息后，从 state["messages"] 也能看到该变化。
+把 state 放入另一个列表，只保存了对该字典的引用，不会自动复制字典内容。
+state.copy() 是浅拷贝，只复制最外层字典，嵌套的消息列表仍可能共享。
+copy.deepcopy(state) 会递归复制这类字典和列表，适合记录独立的测试快照。
+内存对象发生变化，不会自动更新先前写入文件或数据库的数据，仍需显式保存。
+
+七、路径与工作目录
+相对路径通常以进程当前工作目录为基准，启动方式不同可能改变其含义。
+__file__ 表示当前模块文件的位置，可以结合 pathlib 定位模块附近的资源。
+Path(__file__).resolve().parent 表示当前模块所在目录。
+如果模块放在 tools 子目录，而 notes 与 tools 同级，需要从模块目录再向上一级寻找 notes。
+Path.resolve() 可以规范化路径并解析符号链接，但它本身不等于权限检查。
+文件访问范围需要由程序单独检查，例如限制到指定的笔记目录。
+
+八、检索结果应如何理解
+检索命中表示找到了包含查询词的文本，不保证片段足以回答整个问题。
+查询没有结果时，应区分资料确实未涉及，以及关键词表达不同造成的漏检。
+保留文件名、命中行号和上下文范围，可以帮助用户回到原文核对依据。
+如果工具只返回排序后的前几条结果，回答时应说明依据来自已返回的片段。
+资料不足时应明确指出缺口，并将额外解释与原文证据区分开。

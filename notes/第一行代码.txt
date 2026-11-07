@@ -1,0 +1,1015 @@
+#第二章  **kotlin**基础入门
+
+## 2.3 kotlin函数的语法糖
+
+```kotlin
+fun largerNumber(num1: Int,num2:Int):Int{
+    return max(num1,num2)
+}
+```
+
+可以简化为
+
+`fun largerNumber (bun1: Int,num2: Int) = max(bum1,num2)`
+
+
+
+## 2.4 kotlin里的程序语句
+
+### 2.4.1 **if**语句
+
+例如将`largerNumber()`函数改为：
+
+```kotlin
+fun largerNumber(num1: Int, num2: Int) : Int{
+    var value = 0
+    if (num1 > num2) {
+        value = num1
+    }else{
+        value = num2
+    }
+    return value
+}
+```
+
+而kotlin中if语句有返回值，于是可以：
+
+```kotlin
+fun largerNumber(num1: Int, num2: Int): Int {
+    return if (num1 > num2) {
+        num1
+    }else
+        num2
+}
+```
+
+继续简化为：
+
+```kotlin
+fun largerNumber(num1: Int, 
+                 num2: Int) = if(num1>num2) {
+    num1
+}else{
+    num2
+}
+```
+
+
+
+
+
+### 2.4.3 循环语句
+
+for-in循环
+
+```kotlin
+fun main(){
+    for(i in 0..10){
+        println(i)
+    }
+}
+//打印出0——10
+```
+
+其中的..关键字是左闭右闭，所以是[0,10]
+
+`until`关键字是左闭右开区间
+
+
+
+`step` 关键字
+
+```kotlin
+fun main(){
+    for(i in 0 until 10 step 2){
+        println(i)
+    }
+}
+//打印出0 2 4 6 8
+```
+
+降序关键字 `downTo`
+
+
+
+
+
+## 2.5 面向对象编程
+
+### 2.5.2 继承与构造函数
+
+kotlin中的类默认不被继承，需要添加open关键字，**继承的extends变成了  ：**
+
+
+
+构造函数：
+
+继承类后面的一对空括号表示父类的主构造函数在初始化时，会调用继承类的无参数构造函数，且不能省略
+
+如果父类的主构造函数里有参数，那么也要给继承里的父类传入相应的字段，同样的，继承类的主构造函数也要加上这两个参数。
+
+person类
+
+```kotlin
+open class Person(val name : String, val age : int){
+    ...
+}
+```
+
+student类
+
+```kotlin
+class Student (val sno :String, val grade :Int ,
+               name :String ,age :Int) : Person(name,age){
+    ...
+}
+```
+
+
+
+
+
+### 2.5.3 接口
+
+
+
+#### Kotlin 与 Java 函数可见修饰符的区别
+
+| 维度          | Java 函数可见修饰符                                   | Kotlin 函数可见修饰符                                    |
+| ------------- | ----------------------------------------------------- | -------------------------------------------------------- |
+| 基础修饰符集  | `public`、`protected`、`default`（包私有）、`private` | `public`、`protected`、`internal`（模块私有）、`private` |
+| 默认可见性    | `default`（包私有）                                   | `public`（全局可见）                                     |
+| `protected`   | 本类+子类（跨包也可访问）                             | 本类+子类（仅同模块内可访问）                            |
+| 包/模块级访问 | 依赖`default`（包私有）                               | 依赖`internal`（模块私有），无包私有概念                 |
+| `private`     | 类内/方法内可见                                       | 支持类内/文件级私有（顶层函数可仅当前文件可见）          |
+| 顶层函数      | 无顶层函数概念，函数必须在类内                        | 支持顶层函数，可指定`private`/`internal`/`public`        |
+
+#### 单例类
+
+**java**的单例模式
+
+```java
+public class Singleton {
+    
+    private static Singleton instance;
+
+    private Singleton() {
+    }
+
+    public synchronized static Singleton getInstance() {
+        if (instance == null) {
+            instance = new Singleton();
+
+        }
+        return instance;
+    }
+
+    public void singletonTest() {
+        System.out.println("singletonTest is called");
+    }
+}
+```
+
+
+
+**kotlin**中创建单例模式：
+
+只需要把class关键字改为object关键字即可
+
+```kotlin
+object Singleton{
+    fun singletonTest(){
+        println("singletonTest is called")
+    }
+}
+```
+
+调用单例类的函数和Java中静态方法类似
+
+`Singleton.singletonTest()`(已经自动创建了一个SIngleton类的实例)
+
+
+
+
+
+## 2.6 Lambda编程
+
+### 2.6.1集合的创建与遍历
+
+#### List集合和Set集合
+
+```kotlin
+fun main(){
+    //集合的初始化
+    val list = listof("apple","banana","orange","pear","grape")
+    //for-in遍历集合
+    for(fruit in list){
+        println(fruit)
+    }
+}
+```
+
+`listof`创建的是不可变集合，`mutablelistof`用来创建可变集合
+
+Set集合与List集合同理，区别在于Set集合不能放重复元素
+
+
+
+#### Map集合
+
+kotlin 里的基础写法:
+
+```kotlin
+val map = HashMap<String ,Int>()
+map["apple"] = 1
+map["bannan"] = 2
+map["orange"] = 3
+map["pear"] = 4
+map["grape"] = 5
+```
+
+使用`mapOf`()和`mutableMapOf`()
+
+```kotlin
+fun main() {
+    val map = mapOf("apple" to 1, "banana" to 2, "orange" to 3, "pear" to 4, "grape" to 5)
+    for ((fruit, number) in map) {
+        print(fruit+number)
+    }
+}
+```
+
+
+
+### 2.6.2 集合的函数式API
+
+#### Lambda表达式
+
+Lambda表达式的语法结构：
+
+`{参数名1：参数类型 ， 参数名2：参数类型 -> 函数体}`
+
+
+
+例如找出名字最长的水果
+
+```kotlin
+val list = listof("apple","banana","orange","pear","grape")
+val lambda = { fruit :Stirng -> fruit.length}
+val maxLengthFruit = list.maxBy(lambda)
+```
+
+1.不需要专门定义一个lambda变量，将其传入maxBy函数中
+
+`val maxLengthFruit = list.maxBy({ fruit :Stirng -> fruit.length})`
+
+
+
+2.当lambda参数是函数的最后一个参数时，可以将lambda表达式移到函数括号的外面
+
+`val maxLengthFruit = list.maxBy(){ fruit :Stirng -> fruit.length}`
+
+
+
+3.如果lambda参数是函数的唯一一个参数时，可以将函数的括号省略
+
+`val maxLengthFruit = list.maxBy{ fruit :Stirng -> fruit.length}`
+
+
+
+4.根据kotlin优秀的类型推导机制，可以省去参数的声明类型，且只有一个参数时也不必声明参数名
+
+`val maxLengthFruit = list.maxBy{ it.length}`
+
+
+
+#### 常用的函数式API
+
+##### map和filter函数
+
+| 函数     | 基础作用                                                     |
+| -------- | ------------------------------------------------------------ |
+| `filter` | 遍历集合，根据指定条件筛选元素，返回包含符合条件元素的**新原类型集合** |
+| `map`    | 遍历集合，对每个元素执行转换逻辑，返回包含转换后元素的**新集合（类型可改）** |
+
+```kotlin
+fun <T> Iterable<T>.filter(predicate: (T) -> Boolean): List<T>
+```
+
+- `predicate`：Lambda 表达式，接收集合元素，返回布尔值（`true` 保留元素，`false` 过滤）。
+
+  例如：
+
+```kotlin
+fun main() {
+    // 1. 基础类型集合过滤
+    val numbers = listOf(1, 2, 3, 4, 5, 6)
+    // 筛选偶数
+    val evenNumbers = numbers.filter { it % 2 == 0 }
+    println("偶数：$evenNumbers") // 输出：偶数：[2, 4, 6]
+
+    // 2. 自定义对象集合过滤
+    data class User(val name: String, val age: Int)
+    val users = listOf(User("Alice", 20), User("Bob", 17), User("Charlie", 25))
+    // 筛选年龄≥18的用户
+    val adultUsers = users.filter { it.age >= 18 }
+    println("成年用户：$adultUsers") // 输出：成年用户：[User(name=Alice, age=20), User(name=Charlie, age=25)]
+}
+```
+
+
+
+map和filter组合使用
+
+```kotlin
+fun main() {
+    data class Product(val name: String, val price: Double, val isOnSale: Boolean)
+    val products = listOf(
+        Product("手机", 2999.99, true),
+        Product("耳机", 199.99, false),
+        Product("平板", 1999.99, true)
+    )
+
+    // 先筛选促销商品，再提取商品名称
+    val saleProductNames = products
+        .filter { it.isOnSale }
+        .map { it.name }
+
+    println("促销商品名称：$saleProductNames") // 输出：促销商品名称：[手机, 平板]
+}
+```
+
+
+
+##### any和all 函数
+
+| 函数  | 基础作用                                                     |
+| ----- | ------------------------------------------------------------ |
+| `any` | 判断集合中**是否存在至少一个**元素满足指定条件，返回 Boolean |
+| `all` | 判断集合中**所有元素**是否都满足指定条件，返回 Boolean       |
+
+示例：
+
+```kotlin
+fun main() {
+    val numbers = listOf(1, 2, 3, 4, 5)
+
+    // 1. any 用法
+    // 判断是否存在偶数
+    val hasEven = numbers.any { it % 2 == 0 }
+    println("是否存在偶数：$hasEven") // 输出：true
+    // 判断是否存在大于10的数
+    val hasGreaterThan10 = numbers.any { it > 10 }
+    println("是否存在大于10的数：$hasGreaterThan10") // 输出：false
+
+    // 2. all 用法
+    // 判断是否所有元素都小于6
+    val allLessThan6 = numbers.all { it < 6 }
+    println("是否所有元素都小于6：$allLessThan6") // 输出：true
+    // 判断是否所有元素都是偶数
+    val allEven = numbers.all { it % 2 == 0 }
+    println("是否所有元素都是偶数：$allEven") // 输出：false
+```
+
+
+
+
+
+## 2.7空指针检查
+
+### 2.7.1 可空类型系统
+
+kotlin将空指针异常的问题提前到了编译时期，如果存在风险就会直接报错。如果需要可为空的，就只需要在类名后加一个问号，例如Int表示不可为空的整型，那么Int？就表示可为空的整型
+
+若需要传入的参数可为空，那只要把空指针异常处理掉就好
+
+
+
+### 2.7.2 判空辅助工具
+
+#### 操作符
+
+`?.`操作符，当对象不为空时正常调用方法，对象为空时则什么都不做
+
+`?:`操作符，左右两边各接收一个表达式，左边表达式结果不为空就返回左边结果，否则返回右边结果
+
+```kotlin
+val c  = if(a != null){
+    a
+}else{
+    b
+}
+```
+
+可简化为：
+
+`val c = a ?: b`
+
+
+
+比如编写一个函数来获得一段文本的长度
+
+```kotlin
+fun getTextLength(text :String?): Int{
+    if(text != null ){
+        return text.length
+    }
+    return 0
+}
+```
+
+用判空操作符简化为：
+
+`fun getTextLength (text:String?) = text?.length ?: 0`
+
+
+
+非空断言工具`!!`，在对象的后面加上！！,告诉kotlin不用做空指针检查
+
+####标准函数let
+
+let函数，提供了函数式API的编程接口，并将原始调用对象作为参数传递到lambda表达式中
+
+`obj.let{ obj2 -> //具体的业务逻辑}`
+
+例如这段代码
+
+```kotlin
+fun dostudy(study :Study?){
+    study?.readbooks()
+    study?.dohomework()
+}
+```
+
+可以变为
+
+```kotlin
+fun dostudy(study :Study?){
+    //?.让对象为空时什么都不做，对象不为空时就调用let函数，let函数把study当作参数传入到lambda表达式中
+    study?.let{ stu ->
+              stu.readbooks()
+              stu.dohomework()
+         }
+}
+```
+
+当lambda表达式中只有一个参数时，可以不用声明参数名，直接用`it`关键字
+
+```kotlin
+fun dostudy(study :Study?){
+    study?.let{ 
+              it.readbooks()
+              it.dohomework()
+         }
+}
+```
+
+
+
+
+
+## 2.8 kotlin中的小技巧
+
+### 2.8.1 字符串内嵌表达式
+
+Kotlin中字符串内嵌表达式的语法规则：
+`hello ,${obj.name}.nice to meet you`
+
+
+
+### 2.8.2 函数的参数默认值
+
+```kotlin
+fun printParams(num : Int ,str : String = "hello"){
+    println("num is $num, str is $str")
+}
+fun main(){
+    printParams(123)
+}
+```
+
+kotlin里使用键值对来传参，比如：
+
+```kotlin
+fun printParams(num : Int = 100 ,str : String ){
+    println("num is $num, str is $str")
+}
+fun main(){
+    printParams(str = "world")
+}
+```
+
+
+
+
+
+# 第三章 Activity
+
+## 3.7 Kotlin:标准函数和静态方法
+
+### 3.7.1 标准函数with，run和apply
+
+#### with函数
+
+- 接收两个参数：目标对象 + 作用于该对象的 Lambda 表达式；
+
+- Lambda 内部可直接调用对象的属性 / 方法，无需通过 `对象.` 访问；
+
+- 返回值为 Lambda 表达式最后一行的结果。
+
+  ```kotlin
+  val result = with(obj){
+      //这里是obj的上下文
+      "value" //with函数的返回值
+  }
+  ```
+
+
+
+#### run函数，apply函数
+
+| 函数    | 调用方式         | 内部指代对象 | 返回值              | 核心场景                      |
+| ------- | ---------------- | ------------ | ------------------- | ----------------------------- |
+| `with`  | `with(对象) { }` | `this`       | Lambda 最后一行结果 | 对对象执行多操作，需返回结果  |
+| `run`   | `对象.run { }`   | `this`       | Lambda 最后一行结果 | 空安全调用 + 操作后返回结果   |
+| `apply` | `对象.apply { }` | `this`       | 原对象本身          | 初始化 / 配置对象（链式调用） |
+
+`run`函数要在某个对象的基础上调用，`apply`函数无法指定返回值，只能返回调用对象本身
+
+
+
+### 3.7.2 定义静态方法
+
+kotlin里没有直接定义静态方法的关键字，一般由语法特性来支持类似的写法，如果需要定义真正的静态方法，需要注解和顶层方法
+
+```kotlin
+class Util{
+    fun doAction1(){
+        
+    }
+    
+    companion object {
+        @JvmStatic//不太常用
+        fun doAction2(){}
+    }
+}
+```
+
+顶层方法：没有定义在任何类中的方法，kotlin会将这些全部编译为静态方法
+
+在kotlin代码里可以被随便调用，在Java代码里用  `类名.doSomething()`即可
+
+
+
+
+
+# 第四章 UI
+
+## 4.6 RecyclerView 适配器的模板写法
+
+```kotlin
+// 括号里传入你的数据源 (比如 List<Fruit>)
+class MyAdapter(val dataList: List<Fruit>) : RecyclerView.Adapter<MyAdapter.MyViewHolder>() {
+
+    // 1. 模具车间：找控件
+    inner class MyViewHolder(view: View) : RecyclerView.ViewHolder(view) {
+        val myTextView: TextView = view.findViewById(R.id.fruitName)
+        // val myImageView: ImageView = view.findViewById(...)
+    }
+
+    // 2. 造模具车间：加载 XML
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): MyViewHolder {
+        // 这行代码是死格式，只需改掉 R.layout.你的卡片名字 即可
+        val view = LayoutInflater.from(parent.context).inflate(R.layout.fruit_item, parent, false)
+        return MyViewHolder(view)
+    }
+
+    // 3. 填馅车间：绑定数据
+    override fun onBindViewHolder(holder: MyViewHolder, position: Int) {
+        val data = dataList[position] // 拿到当前位置的数据
+        holder.myTextView.text = data.name // 赋值！
+    }
+
+    // 4. 订单统计处：返回总数
+    override fun getItemCount(): Int {
+        return dataList.size
+    }
+}
+```
+
+
+
+## 4.8 延迟初始化和密封类
+
+### 4.8.1 对变量延迟初始化
+
+`lateinit` 是 Kotlin 用于**延迟初始化变量**的关键字，解决「非空变量但无法在声明时初始化」的场景（如依赖注入、Android 控件初始化）。
+
+#### 一、核心作用
+
+- 标记**可变变量（var）**，允许声明时不初始化（突破 Kotlin 非空变量必须立即初始化的约束）；
+- 变量需在**首次使用前**完成初始化，否则调用时会抛出 `UninitializedPropertyAccessException`。
+
+#### 二、使用规则
+
+1. 仅适用于 **var 变量**（val 不可用，val 必须声明时/构造器中初始化）；
+2. 仅适用于 **非基本数据类型**（如 String、自定义类，Int/Boolean 等基本类型需用 `lateinit var` 替代方案 `Delegates.notNull()`）；
+3. 变量不能是 `nullable` 类型（即不能加 `?`）。
+
+#### 三、基础示例
+
+##### 1. 基本使用
+
+```kotlin
+class UserManager {
+    // 声明延迟初始化变量
+    lateinit var userName: String
+
+    // 初始化方法（需在使用前调用）
+    fun initUser(name: String) {
+        userName = name
+    }
+
+    fun printUserName() {
+        // 检查是否已初始化（避免未初始化调用报错）
+        if (::userName.isInitialized) {
+            println("用户名：$userName")
+        } else {
+            println("用户名未初始化")
+        }
+    }
+}
+
+fun main() {
+    val manager = UserManager()
+    manager.printUserName() // 输出：用户名未初始化
+
+    manager.initUser("Alice")
+    manager.printUserName() // 输出：用户名：Alice
+}
+```
+
+##### 2. 常见场景（Android 示例）
+
+```kotlin
+class MainActivity : AppCompatActivity() {
+    // 延迟初始化控件（onCreate 前无法初始化）
+    lateinit var tvTitle: TextView
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setContentView(R.layout.activity_main)
+        // 初始化变量
+        tvTitle = findViewById(R.id.tv_title)
+        // 使用变量
+        tvTitle.text = "Hello Kotlin"
+    }
+}
+```
+
+#### 四、关键说明
+
+1. **初始化检查**：通过 `::变量名.isInitialized` 可检查是否已初始化（仅在声明变量的类内部可用）；
+2. **异常场景**：未初始化就调用变量 → 抛出 `UninitializedPropertyAccessException`；
+
+
+### 4.8.2 密封类优化代码
+
+
+
+#### 密封类（Sealed Class）
+
+##### 核心定义
+
+密封类是一种受限的类继承结构，用于限制类的继承范围（仅允许在同一文件/密封类内部定义子类），是枚举的「扩展版」（枚举值是单例，密封类子类可创建多个实例）。
+
+##### 核心特点
+
+1. **继承受限**：子类只能定义在密封类所在文件内（Kotlin 1.5+）或密封类内部；
+2. **穷尽性检查**：配合 `when` 表达式使用时，编译器可检查是否覆盖所有子类，无需写 `else` 分支；
+3. **可带状态**：子类可定义属性/方法，支持多实例（区别于枚举的单例特性）。
+
+##### 基础示例
+
+```kotlin
+// 定义密封类
+sealed class Result
+// 子类（同文件内）
+class Success(val data: String) : Result()
+class Error(val message: String) : Result()
+
+fun handleResult(result: Result) {
+    // when 表达式穷尽所有子类，无需 else
+    when (result) {
+        is Success -> println("成功：${result.data}")
+        is Error -> println("失败：${result.message}")
+    }
+}
+
+fun main() {
+    handleResult(Success("数据加载完成")) // 输出：成功：数据加载完成
+    handleResult(Error("网络异常")) // 输出：失败：网络异常
+}
+```
+
+##### 核心场景
+
+适用于「有限且固定的类型分支」场景（如接口返回结果、UI 状态、事件类型），替代枚举或普通继承，提升代码安全性（避免遗漏分支）。
+
+
+
+# 第五章 Fragment
+
+## 5.3 Fragment的生命周期
+
+![76570491766](C:\Users\a2124\AppData\Local\Temp\1765704917665.png)
+
+
+
+## 5.6 kotlin的扩展函数和运算符重载
+
+### 5.6.1 扩展函数
+
+**扩展函数**允许你在**不修改一个类的源代码**的情况下，为这个类 “添加” 新的方法。
+
+#### 注意事项和限制
+
+1. **无法访问私有成员**：扩展函数只是一种静态调用，它并不能打破类的封装性。你无法在扩展函数中访问接收者类的 `private` 或 `protected` 成员。
+2. **优先级低于成员函数**：如果一个类已经有了一个与扩展函数同名同参数的成员函数，那么在调用时，**成员函数会被优先调用**。
+3. **是静态解析的**：扩展函数的调用是在**编译时**根据变量的**声明类型**决定的，而不是在运行时根据变量的**实际类型**决定的。这与多态（Polymorphism）不同。
+
+
+
+### 5.6.2 运算符重载
+
+#### 📊 Kotlin 运算符重载函数表
+
+| 运算符         | 函数名           | 说明             | 示例                   |
+| -------------- | ---------------- | ---------------- | ---------------------- |
+| **一元运算符** |                  |                  |                        |
+| `+a`           | `unaryPlus()`    | 正号             | `+vector`              |
+| `-a`           | `unaryMinus()`   | 负号             | `-point`               |
+| `!a`           | `not()`          | 逻辑非           | `!flag`                |
+| `a++`          | `inc()`          | 后置递增         | `a++`                  |
+| `++a`          | `inc()`          | 前置递增         | `++a`                  |
+| `a--`          | `dec()`          | 后置递减         | `a--`                  |
+| `--a`          | `dec()`          | 前置递减         | `--a`                  |
+| **算术运算符** |                  |                  |                        |
+| `a + b`        | `plus(b)`        | 加法             | `point + vector`       |
+| `a - b`        | `minus(b)`       | 减法             | `money1 - money2`      |
+| `a * b`        | `times(b)`       | 乘法             | `matrix * scalar`      |
+| `a / b`        | `div(b)`         | 除法             | `length / 2`           |
+| `a % b`        | `rem(b)`         | 取模             | `angle % 360`          |
+| **复合赋值**   |                  |                  |                        |
+| `a += b`       | `plusAssign(b)`  | 加后赋值         | `list += item`         |
+| `a -= b`       | `minusAssign(b)` | 减后赋值         | `total -= discount`    |
+| `a *= b`       | `timesAssign(b)` | 乘后赋值         | `scale *= 2`           |
+| `a /= b`       | `divAssign(b)`   | 除后赋值         | `value /= 10`          |
+| `a %= b`       | `remAssign(b)`   | 取模后赋值       | `angle %= 360`         |
+| **比较运算符** |                  |                  |                        |
+| `a == b`       | `equals(b)`      | 相等比较         | `obj1 == obj2`         |
+| `a != b`       | `equals(b)`      | 不等比较         | `obj1 != obj2`         |
+| `a > b`        | `compareTo(b)`   | 大于             | `date1 > date2`        |
+| `a < b`        | `compareTo(b)`   | 小于             | `price1 < price2`      |
+| `a >= b`       | `compareTo(b)`   | 大于等于         | `score1 >= score2`     |
+| `a <= b`       | `compareTo(b)`   | 小于等于         | `age1 <= age2`         |
+| **索引访问**   |                  |                  |                        |
+| `a[i]`         | `get(i)`         | 获取元素         | `matrix[row, col]`     |
+| `a[i] = b`     | `set(i, b)`      | 设置元素         | `array[index] = value` |
+| **调用操作符** |                  |                  |                        |
+| `a()`          | `invoke()`       | 对象作为函数调用 | `calculator(x)`        |
+| `a(b)`         | `invoke(b)`      | 带参数的调用     | `function(arg)`        |
+| **范围操作符** |                  |                  |                        |
+| `a..b`         | `rangeTo(b)`     | 创建范围         | `1..10`                |
+| **包含关系**   |                  |                  |                        |
+| `a in b`       | `contains(a)`    | 检查包含         | `point in rectangle`   |
+| `a !in b`      | `contains(a)`    | 检查不包含       | `key !in map`          |
+
+实现字符串乘以数字`str * n`：
+
+```kotlin
+operator fun String.times(n : Int): String{
+    val builder = StringBuilder()
+    repeat(n){
+        builder.append(this)
+    }
+    return builder.toString()
+}
+
+
+//于是可以使用字符串和数字相乘了
+val str = "abc" * 3
+println(str)//abcabcabc
+
+//kotlin的String类中提供了repeat()函数。因此可以进一步简化为：
+operator fun String.times(n : Int) = repeat(n)
+```
+
+
+
+# 第六章 广播Broadcast
+
+## 关于视图绑定的使用
+
+### 如何使用 View Binding？
+
+使用 View Binding 分为三步：启用、在 Activity/Fragment 中设置、使用。
+
+#### 第 1 步：在模块的 `build.gradle` 文件中启用
+
+打开你的 `app/build.gradle` (或 `build.gradle.kts`) 文件，在 `android` 代码块中添加 `viewBinding` 配置。
+
+**Groovy (`build.gradle`):**
+```groovy
+android {
+    ...
+    buildFeatures {
+        viewBinding true
+    }
+}
+```
+
+**Kotlin DSL (`build.gradle.kts`):**
+```kotlin
+android {
+    ...
+    buildFeatures {
+        viewBinding = true
+    }
+}
+```
+同步你的项目（Sync Project），Android Studio 就会开始为你的布局文件生成绑定类了。
+
+#### 第 2 步：在 Activity 中设置
+
+假设你有一个布局文件叫 `activity_main.xml`。
+
+```xml
+<!-- res/layout/activity_main.xml -->
+<LinearLayout ...>
+    <TextView
+        android:id="@+id/tv_message"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content" />
+
+    <Button
+        android:id="@+id/btn_click_me"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Click Me" />
+</LinearLayout>
+```
+启用 View Binding 后，系统会自动生成一个名为 `ActivityMainBinding` 的类。
+
+现在，在你的 `MainActivity` 中这样使用它：
+
+```kotlin
+import android.os.Bundle
+import androidx.appcompat.app.AppCompatActivity
+import com.yourpackage.name.databinding.ActivityMainBinding // 导入生成的类
+
+class MainActivity : AppCompatActivity() {
+
+    // 声明一个绑定对象，使用 lateinit 延迟初始化
+    private lateinit var binding: ActivityMainBinding
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+
+        // 1. 调用 inflate() 方法来填充布局
+        // 这会替代传统的 setContentView(R.layout.activity_main)
+        binding = ActivityMainBinding.inflate(layoutInflater)
+
+        // 2. 获取根视图并设置为内容视图
+        val view = binding.root
+        setContentView(view)
+
+        // 3. 现在可以通过 binding 对象安全地访问视图了
+        binding.tvMessage.text = "Hello, View Binding!"
+
+        binding.btnClickMe.setOnClickListener {
+            binding.tvMessage.text = "Button was clicked!"
+        }
+    }
+}
+```
+
+#### 第 3 步：在 Fragment 中设置
+
+在 Fragment 中使用 View Binding 稍微复杂一点，因为需要处理视图的生命周期。
+
+```kotlin
+import android.os.Bundle
+import android.view.LayoutInflater
+import android.view.View
+import android.view.ViewGroup
+import androidx.fragment.app.Fragment
+import com.yourpackage.name.databinding.FragmentExampleBinding
+
+class ExampleFragment : Fragment() {
+
+    // 使用 ? 使其可空，并在 onDestroyView 中置为 null
+    private var _binding: FragmentExampleBinding? = null
+
+    // 使用一个非空的属性委托来访问 binding
+    // 这可以确保在视图存在时，binding 不会是 null
+    private val binding get() = _binding!!
+
+    override fun onCreateView(
+        inflater: LayoutInflater,
+        container: ViewGroup?,
+        savedInstanceState: Bundle?
+    ): View? {
+        // 1. 填充布局
+        _binding = FragmentExampleBinding.inflate(inflater, container, false)
+        return binding.root
+    }
+
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+
+        // 2. 使用 binding 对象
+        binding.someTextView.text = "Hello from Fragment"
+    }
+
+    override fun onDestroyView() {
+        super.onDestroyView()
+        // 3. 非常重要：在视图销毁时，将 binding 引用置为 null，以避免内存泄漏
+        _binding = null
+    }
+}
+```
+
+
+
+
+
+# 第八章 程序权限和跨数据共享 ContentProvider
+
+## 8.2 运行时权限
+
+### 8.2.2 申请权限
+
+```kotlin
+class MainActivity : AppCompatActivity() {
+    private lateinit var binding: ActivityMainBinding
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        
+        binding = ActivityMainBinding.inflate(layoutInflater)
+        setContentView(binding.root)
+
+        binding.makeCall.setOnClickListener {
+            if (ContextCompat.checkSelfPermission(
+                    this,
+                    Manifest.permission.CALL_PHONE//具体权限名
+                ) == PackageManager.PERMISSION_GRANTED//是一个整数常量，值为0，权限的返回码
+            ) {
+                call()
+                )
+            } else {
+                ActivityCompat.requestPermissions(
+                    this,
+                    arrayOf(Manifest.permission.CALL_PHONE),
+                    1
+            }
+        }
+    }
+
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<out String>,
+        grantResults: IntArray
+    ) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        when (requestCode) {
+            1 -> {
+                if (grantResults.isNotEmpty()
+                    && grantResults[0] == PackageManager.PERMISSION_GRANTED
+                ) {
+                    call()
+                } else {
+                    Toast.makeText(this, "Permission Denied", Toast.LENGTH_SHORT).show()
+
+
+                }
+
+            }
+        }
+    }
+
+    private fun call(){
+        try{
+            val intent = Intent(Intent.ACTION_CALL)
+            intent.data = Uri.parse("tel:123456789")
+            startActivity(intent)
+        }catch (e:Exception){
+            e.printStackTrace()
+        }
+    }
+}
+```
+
+
+

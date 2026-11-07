@@ -1,0 +1,11 @@
+Agent Runtime 测试笔记
+模型通过 tool_calls 提出工具调用请求。
+Python 执行工具，将结果通过 tool 消息返回模型。
+MAX_STEPS 限制模型请求轮数。
+一轮模型请求可以包含多个工具调用。
+网络连接失败或请求超时，可能导致模型请求抛出 APIError。
+捕获请求异常后，将任务状态保存为 failed。
+会话使用 user_id 和 session_id 共同标识。
+相同用户的不同会话分别保存 messages。
+SQLite 将会话消息序列化为 JSON 文本保存。
+恢复消息历史后，仍需要设计中断任务的续跑策略。
