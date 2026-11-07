@@ -115,12 +115,14 @@ def execute_tool(name,arguments):
     if args["start_line"] is None or args["end_line"] is None:
         return "错误，起始行和结束行不能为null"
 
-    # 类型，范围，50行上限和路径限制由文件函数继续检查
-    return read_file(
+    read_result = read_file(
         filename = args["filename"],
         start_line = args["start_line"],
         end_line = args["end_line"]
     )
+
+    # python内部使用字典，回传模型的tool消息使用字符串
+    return json.dumps(read_result, ensure_ascii=False)
 
 
 def run_agent(user_task,session_id):
@@ -187,7 +189,7 @@ def run_agent(user_task,session_id):
         USER_ID,SESSION_ID
     )
 
-    MAX_STEPS = 4
+    MAX_STEPS = 6
 
     for step in range(MAX_STEPS):
         logger.info(

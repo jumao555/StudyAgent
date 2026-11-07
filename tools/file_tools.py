@@ -9,7 +9,10 @@ NOTES_DIR = (
 
 def read_file(filename,start_line=None,end_line=None):
     if not isinstance(filename, str) or not filename.strip():
-        return "错误，文件名必须是字符串"
+        return {
+            "ok": False,
+            "error": "错误，文件名必须是非空字符串"
+        }
 
     # 任意一个行号被提供，就进入按行读取模式
     use_range = start_line is not None or end_line is not None
@@ -18,30 +21,40 @@ def read_file(filename,start_line=None,end_line=None):
         # type(...) is int 同时排除 True、False：
         # Python 中 bool 是 int 的子类，isinstance(True, int) 会返回 True
         if type(start_line) is not int or type(end_line) is not int:
-            return "错误，起始行和结束行必须同时提供，且必须是整数"
+            return {
+                "ok": False,
+                "error": "错误，起始行和结束行必须同时提供，且必须是整数"
+            }
 
         if start_line < 1 or end_line < start_line:
-            return "错误，行号必须从1开始，结束行不能小于起始行"
+            return {
+                "ok": False,
+                "error": "错误，行号必须从1开始，结束行不能小于起始行"
+            }
             # 首尾都包含，所以需要加1。
         if end_line - start_line + 1 > 50:
-            return "错误，每次最多读取50行"
+            return {"ok": False, "error": "错误，每次最多读取50行"}
     try:
         file_path = (NOTES_DIR / filename).resolve()
 
         # 保留现有安全边界，只读取notes 直接包含的文件
         if file_path.parent != NOTES_DIR:
-            return "错误，禁止访问笔记目录之外的文件"
+            return {"ok": False, "error": "错误，禁止访问笔记目录之外的文件"}
 
         if file_path.suffix.lower() != ".txt":
-            return "错误：只允许读取 txt 文件"
+            return {"ok": False, "error": "错误，只允许读取 txt 文件"}
+
 
         content = file_path.read_text(encoding="utf-8")
 
         if not use_range:
-            return content
+            return {"ok":True, "content":content}
         lines = content.splitlines()
-        if start_line > len(lines) :
-            return f"错误，起始行超出文件范围，文件共{len(lines)}行"
+        if start_line > len(lines):
+            return {
+                "ok": False,
+                "error": f"错误，起始行超出文件范围，文件共{len(lines)}行"
+            }
 
         actual_end = min(len(lines), end_line)
 
@@ -56,16 +69,27 @@ def read_file(filename,start_line=None,end_line=None):
                 selected_lines, start=start_line
             )
         ]
-        return "\n".join(numbered_lines)
+        return {
+            "ok":True,
+            "content":"\n".join(numbered_lines)
+        }
+
 
     except FileNotFoundError:
-        return "错误，文件不存在"
+
+        return {"ok": False, "error": "错误，文件不存在"}
+
     except PermissionError:
-        return "错误，没有文件访问权限"
+
+        return {"ok": False, "error": "错误，没有文件访问权限"}
+
     except UnicodeDecodeError:
-        return "错误，文件编码不是utf-8"
+
+        return {"ok": False, "error": "错误，文件编码不是UTF-8"}
+
     except OSError:
-        return "错误，文件访问失败"
+
+        return {"ok": False, "error": "错误，文件访问失败"}
 
 def list_files():
     try:
@@ -106,11 +130,17 @@ def search_notes(keyword):
         return "错误，无法获取文件列表"
 
     for filename in filenames:
-        content = read_file(filename)
-        if content.startswith("错误"):
-            return f"错误，无法搜索笔记{filename}"
+        read_result = read_file(filename)
 
+        # 根据明确的状态判断，不会被正文的文字所影响
+        if not read_result["ok"]:
+            return(
+                f"错误，无法搜索笔记{filename}"
+                f"{read_result['error']}"
+            )
+        content = read_result["content"]
         lines = content.splitlines()
+
         for index,line in enumerate(lines):
             # 任意一个查询词出现，就收集这一行及其附近内容
             if any(word in line.casefold() for word in keywords):
