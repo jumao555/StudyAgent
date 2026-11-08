@@ -19,6 +19,17 @@ def init_db():
             )
         """)
 
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS plans (
+                id INTEGER PRIMARY KEY,
+                user_id TEXT NOT NULL,
+                title TEXT NOT NULL,
+                filename TEXT NOT NULL UNIQUE,
+                created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                status TEXT NOT NULL DEFAULT 'pending'
+                    CHECK (status IN ('pending', 'completed'))
+            )
+        """)
         conn.commit()
 
     finally:
@@ -64,6 +75,29 @@ def load_session(user_id,session_id):
             "status": row[0],
             "messages": messages
         }
+
+def register_plan(user_id, title, filename):
+    """登记一个已成功写入的计划文件，返回计划ID。"""
+    conn = sqlite3.connect(DB_PATH)
+
+    try:
+        # 状态和创建时间使用数据表中声明的默认值。
+        cursor = conn.execute(
+            """
+            INSERT INTO plans (user_id, title, filename)
+            VALUES (?, ?, ?)
+            """,
+            (user_id, title, filename),
+        )
+
+        conn.commit()
+
+        # 取得刚刚插入的记录ID，后续查看、更新都用它。
+        return cursor.lastrowid
+
+    finally:
+        # 无论成功还是异常，都释放数据库连接。
+        conn.close()
 
 
 if __name__ == "__main__":

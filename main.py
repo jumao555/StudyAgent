@@ -6,6 +6,7 @@ from dotenv import load_dotenv
 from openai import OpenAI,APIError
 from tools.file_tools import read_file,list_files,search_notes
 from database import  init_db,load_session,save_session
+from tools.plan_tools import save_plan
 
 logger = logging.getLogger(__name__)
 
@@ -75,11 +76,39 @@ tools = [
                 "additionalProperties": False
             }
         }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "save_plan",
+            "description": (
+                "用户要求保存学习计划时使用。"
+                "保存前程序会展示内容并要求用户确认。"
+                "只能新建计划文件，不能覆盖已有文件。"
+                "正文应包含学习目标、时间安排、具体任务和验收方式；"
+                "引用笔记时注明真实来源，资料不足时明确说明。"
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "title": {
+                        "type": "string",
+                        "description": "计划标题，单行，不超过100个字符"
+                    },
+                    "content": {
+                        "type": "string",
+                        "description": "Markdown格式的计划正文，不超过20000个字符"
+                    }
+                },
+                "required": ["title", "content"],
+                "additionalProperties": False
+            }
+        }
     }
 ]
 
 def execute_tool(name,arguments):
-    if name not in ["read_file","list_files","search_notes"]:
+    if name not in ["read_file","list_files","search_notes","save_plan"]:
         return "错误：未知工具"
 
     # 第一阶段：解析json参数
@@ -102,6 +131,47 @@ def execute_tool(name,arguments):
             return "错误，search_notes 只接受 keyword 参数"
         return search_notes(args["keyword"])
 
+    if name == "save_plan":
+        if set(args) != {"title", "content"}:
+            return "错误，save_plan必须且只能提供title和content"
+
+        title = args["title"]
+        content = args["content"]
+
+        # 在展示确认内容之前，先排除无效输入
+        if not isinstance(title,str) or not title.strip():
+            return "错误，计划标题必须是非空字符串"
+        if not isinstance(content,str) or not content.strip():
+            return "错误，计划正文必须是非空字符串"
+        title = title.strip()
+        content = content.strip()
+
+        if len(title) > 100 or "\n" in title or "\r" in title:
+            return "错误，标题必须是单行且不能超过100个字符"
+
+        if len(content) > 20000:
+            return "错误，正文不能超过20000个字符"
+
+        print("\n即将保存以下学习计划：")
+        print(f"{title}\n\n{content}")
+
+        # 确认来自真实的命令行输入，不接受模型传入的确认字段
+        confirmation = input(
+            "\n 输入 yes 确认保存，其他输入取消："
+
+        ).strip().lower()
+
+        if confirmation != "yes":
+            return json.dumps(
+                {
+                    "ok": False,
+                    "cancelled": True,
+                    "error": "用户取消保存，未创建文件"
+                },
+                ensure_ascii=False,
+            )
+        result = save_plan(title,content)
+        return json.dumps(result, ensure_ascii=False)
 
     # 前面的分支已经处理了其他工具，走到这里的是read_file
     expected_keys = {"filename", "start_line", "end_line"}
@@ -328,9 +398,15 @@ if __name__ == "__main__":
     session_id = input("请输入会话编号（直接回车使用default）：").strip()
     session_id = session_id or "default"
 
-    user_task = input("请输入学习任务：").strip()
+    print("请输入学习任务,输入/exit退出")
 
-    if user_task:
-        run_agent(user_task,session_id)
-    else:
-        print("任务不能为空")
+    while True:
+        user_task = input("\n你：").strip()
+
+        if user_task == "/exit":
+            print("本次对话结束")
+            break
+        if not user_task:
+            print("任务不能为空")
+            continue
+        run_agent(user_task, session_id)
