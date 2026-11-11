@@ -5,3 +5,5 @@ studyagent.db
 studyagent.db-*
 *.log
 .idea/
+plans/
+.pytest_cache/

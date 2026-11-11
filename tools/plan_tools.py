@@ -1,5 +1,7 @@
 from pathlib import Path
 from uuid import uuid4
+import sqlite3
+from database import get_plan
 
 PLANS_DIR = Path(__file__).resolve().parent.parent / "plans"
 
@@ -67,4 +69,55 @@ def save_plan(title, content):
         "relative_path": f"plans/{filename}",
         "title": title,
 
+    }
+
+
+def open_plan(user_id,plan_id):
+    if type(plan_id) is not int or plan_id < 1:
+        return {
+            "ok": False,
+            "error": "计划id必须是正整数",
+        }
+    try:
+        plan = get_plan(user_id,plan_id)
+    except sqlite3.Error:
+        return {
+            "ok": False,
+            "error": "无法查询计划记录"
+        }
+    if plan is None:
+        return {
+            "ok": False,
+            "error": "计划不存在或不属于当前用户"
+        }
+
+    try:
+        plans_dir = PLANS_DIR.resolve()
+        file_path = (plans_dir / plan["filename"]).resolve()
+
+        # 即使文件名来自数据库，也检查实际读取范围。
+        if (
+                file_path.parent != plans_dir
+                or file_path.suffix.lower() != ".md"
+        ):
+            return {"ok": False, "error": "计划文件路径不合法"}
+
+        content = file_path.read_text(encoding="utf-8")
+
+    except FileNotFoundError:
+        return {
+            "ok": False,
+            "error": "计划记录存在，但正文文件已丢失"
+        }
+    except UnicodeDecodeError:
+        return {"ok": False, "error": "计划文件不是有效的UTF-8文本"}
+    except OSError:
+        return {"ok": False, "error": "计划文件读取失败"}
+    except ValueError:
+        return {"ok": False, "error": "计划文件路径不合法"}
+
+    return {
+        "ok": True,
+        "plan": plan,
+        "content": content,
     }

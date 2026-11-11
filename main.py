@@ -1,12 +1,13 @@
 import os
 import logging
 import json
+import sqlite3
 from pathlib import Path
 from dotenv import load_dotenv
 from openai import OpenAI,APIError
 from tools.file_tools import read_file,list_files,search_notes
-from database import  init_db,load_session,save_session
 from tools.plan_tools import save_plan
+from database import(init_db,load_session,save_session,register_plan)
 
 logger = logging.getLogger(__name__)
 
@@ -107,7 +108,7 @@ tools = [
     }
 ]
 
-def execute_tool(name,arguments):
+def execute_tool(name,arguments,user_id,plan_handler=None):
     if name not in ["read_file","list_files","search_notes","save_plan"]:
         return "错误：未知工具"
 
@@ -152,6 +153,10 @@ def execute_tool(name,arguments):
         if len(content) > 20000:
             return "错误，正文不能超过20000个字符"
 
+        if plan_handler is not None:
+            result = plan_handler(title,content)
+            return json.dumps(result, ensure_ascii=False)
+
         print("\n即将保存以下学习计划：")
         print(f"{title}\n\n{content}")
 
@@ -171,6 +176,46 @@ def execute_tool(name,arguments):
                 ensure_ascii=False,
             )
         result = save_plan(title,content)
+
+        # 文件没有保存成功，就不创建数据库记录
+        if not result["ok"]:
+            return json.dumps(result, ensure_ascii=False)
+
+        try:
+            plan_id = register_plan(
+                user_id = user_id,
+                title = result["title"],
+                filename=result["filename"],
+
+            )
+        except sqlite3.Error as exc:
+            logger.error(
+                "计划文件已保存，但登记失败 error_type=%s",
+                type(exc).__name__
+            )
+
+            # 文件已保存，明确报告部分成功
+            # 保留文件位置，不能声称已进入计划列表
+            return json.dumps(
+                {
+                    "ok":False,
+                    "file_saved": True,
+                    "registered": False,
+                    "relative_path": result["relative_path"],
+                    "error": (
+                        "计划文件已保存，但数据库登记失败"
+                        "暂未进入计划列表，请保留该文件"
+                        "不要自动重复保存"
+                    ),
+                },
+                ensure_ascii=False,
+            )
+
+        # 文件写入与数据库登记都已成功，才报告完整成功
+        result["plan_id"] = plan_id
+        result["status"] = "pending"
+        result["registered"] = True
+
         return json.dumps(result, ensure_ascii=False)
 
     # 前面的分支已经处理了其他工具，走到这里的是read_file
@@ -195,13 +240,14 @@ def execute_tool(name,arguments):
     return json.dumps(read_result, ensure_ascii=False)
 
 
-def run_agent(user_task,session_id):
+def run_agent(user_task,session_id,plan_handler=None):
     logging.basicConfig(
         filename=Path(__file__).resolve().parent / "studyagent.log",
         encoding = "utf-8",
         level = logging.INFO,
         format = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
     )
+    # load_dotenv 读取文件，再把配置加载到当前进程的环境变量中
     load_dotenv(Path(__file__).resolve().parent / ".env")
 
     client = OpenAI(
@@ -366,7 +412,11 @@ def run_agent(user_task,session_id):
                 SESSION_ID, step + 1, name, call.id
             )
             # 真正执行读取操作的是python，而不是Gemini
-            result = execute_tool(name, arguments)
+            result = execute_tool(name,
+                                  arguments,
+                                  USER_ID,
+                                  plan_handler = plan_handler,
+            )
 
             logger.info(
                 "工具返回 session=%r step=%d tool=%r call_id=%r",
@@ -392,6 +442,7 @@ def run_agent(user_task,session_id):
         SESSION_ID,state["status"]
     )
 
+    return state
 
 
 if __name__ == "__main__":
